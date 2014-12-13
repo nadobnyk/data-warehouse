@@ -1,0 +1,13 @@
+Input file: E:\dwh\201410160000_201410222359_____m1.so6
+Flights file: E:\dwh\output.flights
+Segments file: E:\dwh\output.segments
+
+---------STATS------------------------
+Total:		133239 millisecounds
+Transact:	133238 millisecounds
+
+Flights:	196323
+Segments:	9325366 
+Segments MIN:	1
+Segments MAX:	156
+Seg/Flight:	47

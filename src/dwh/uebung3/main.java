@@ -13,20 +13,29 @@ import java.util.ArrayList;
 
 public class main {
 	
-	private static boolean debug = true;
+	private static boolean debug = false;
 
 	private static File input;
 	private static File flights_output;
 	private static File segments_output;
 	
 	private static int stats_flightscount = 0;
-	private static long stats_extract_time = 0;
+	private static long stats_transact_time = 0;
+	private static long stats_segmentcount = 0;
+	private static long stats_segmentmax = 0;
+	private static long stats_segmentmin = 1;
 	
 	
 	
 	//String[] args:{[0] file_input_path ; [1] file_output_path}
 	public static void main(String[] args) {
 		long starttime = System.currentTimeMillis();
+		
+		if(args.length >2){
+			if(args[2].toLowerCase().equals("debug")){
+				debug = true;
+			}
+		}
 		
 		try{
 			input = new File(args[0]);
@@ -54,7 +63,7 @@ public class main {
 			etl(input, flights_output, segments_output);
 		}
 		
-		System.out.println("\n-----------------\nTotal:\t"+(System.currentTimeMillis()-starttime)+"millisecounds\nExtract:\t"+stats_extract_time+"millisecounds\nFlights:\t"+stats_flightscount);
+		System.out.println("\n---------STATS------------------------\nTotal:\t\t"+(System.currentTimeMillis()-starttime)+" millisecounds\nTransact:\t"+stats_transact_time+" millisecounds\n\nFlights:\t"+stats_flightscount+"\nSegments:\t"+stats_segmentcount+" \nSegments MIN:\t"+stats_segmentmin+"\nSegments MAX:\t"+stats_segmentmax+"\nSeg/Flight:\t"+(stats_segmentcount/stats_flightscount));
 	}
 	
 	private static void etl(File input, File flights_output, File segments_output){
@@ -92,11 +101,11 @@ public class main {
 			return;
 		}
 		
-		extract(bufferedReader, flights_bufferedWriter, segments_bufferedWriter);
+		transact(bufferedReader, flights_bufferedWriter, segments_bufferedWriter);
 		
 	}
 	
-	private static void extract(BufferedReader file_reader, BufferedWriter flights_writer, BufferedWriter segments_writer){
+	private static void transact(BufferedReader file_reader, BufferedWriter flights_writer, BufferedWriter segments_writer){
 		
 		//init
 		
@@ -127,6 +136,8 @@ public class main {
 		
 		int flight_id = -1;
 		
+		int my_segmentcount = 0;
+		
 		try {
 			while ((line = file_reader.readLine()) != null){
 				fields = line.split(" ");
@@ -137,6 +148,15 @@ public class main {
 					segment_IDs.clear();
 					
 					stats_flightscount++;
+					if(my_segmentcount > stats_segmentmax){
+						stats_segmentmax = my_segmentcount;
+					}
+					if(my_segmentcount < stats_segmentmin && my_segmentcount >0){
+						if(flight_id>0){
+							stats_segmentmin = my_segmentcount;
+						}
+					}
+					my_segmentcount = 0;
 					
 					current_flight.setFlight_identifier(flight_id);
 					current_flight.setAircraft_type(fields[3]);
@@ -153,10 +173,16 @@ public class main {
 				if(!segment_IDs.contains(fields[0].split("_")[0])){
 					current_flight.addSegment(fields[0].split("_")[1], fields[12], fields[13], fields[10], fields[4], fields[6]);
 					segment_IDs.add(fields[0].split("_")[0]);
+					
+					stats_segmentcount++;
+					my_segmentcount++;
 				}
 				if(!segment_IDs.contains(fields[0].split("_")[1])){
 					current_flight.addSegment(fields[0].split("_")[1], fields[14], fields[15], fields[11], fields[5], fields[7]);
 					segment_IDs.add(fields[0].split("_")[1]);
+					
+					stats_segmentcount++;
+					my_segmentcount++;
 				}
 				
 				
@@ -184,7 +210,7 @@ public class main {
 			e.printStackTrace();
 		}
 		
-		stats_extract_time = System.currentTimeMillis()-starttime;
+		stats_transact_time = System.currentTimeMillis()-starttime;
 	}
 
 }
